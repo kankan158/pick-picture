@@ -33,6 +33,9 @@
       <p class="hero-sub">先按相似度自动成组、淘汰明显失败片，<br>剩下的两两摆上擂台，由你裁决。</p>
 
       <form id="start-form" class="start-form" autocomplete="off" action="javascript:void(0)" onsubmit="return false">
+        <div class="start-layout">
+          <aside class="mode-sidebar">
+            <div class="mode-sidebar-label">工作模式</div>
         <div class="engine-switch" role="radiogroup" aria-label="工作模式">
           <label class="engine-opt is-active" data-engine="fast">
             <input type="radio" name="engine" value="fast" checked>
@@ -50,6 +53,8 @@
             <span class="engine-desc">用人话告诉你"为什么退这张" · 每张图 1-3 秒 · 需自备 Key</span>
           </label>
         </div>
+          </aside>
+          <div class="start-main-panel">
         <div id="tycoon-model-picker" class="tycoon-model-picker" hidden>
           <!-- API Key 状态条 -->
           <div class="tycoon-key-status" id="tycoon-key-status">
@@ -202,6 +207,8 @@
         </details>
 
         <p id="start-error" class="form-error"></p>
+          </div>
+        </div>
       </form>
 
       <div class="hero-meta">
