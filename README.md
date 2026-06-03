@@ -1,12 +1,12 @@
-# 片刻 (Pianke)
+# pick-picture
 
 > **让 AI 协助初筛与分组，把最终的审美决定权留给自己。**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)](#一键启动推荐)
-[![License: Pianke v2](https://img.shields.io/badge/license-Pianke%20v2-cc785c.svg)](LICENSE)
+[![License: pick-picture v2](https://img.shields.io/badge/license-pick--picture%20v2-cc785c.svg)](LICENSE)
 
-**片刻** 是一款专为摄影师和摄影爱好者设计的**本地照片双语/擂台式选片工具**。它能够将一次拍摄中相似的几十甚至上百张照片自动归入“同一个瞬间”的组中，然后通过直观的 **左右 A/B 擂台 PK** 方式，让你快速挑出最满意的一张。
+**pick-picture** 是一款专为摄影师和摄影爱好者设计的**本地照片双语/擂台式选片工具**。它能够将一次拍摄中相似的几十甚至上百张照片自动归入“同一个瞬间”的组中，然后通过直观的 **左右 A/B 擂台 PK** 方式，让你快速挑出最满意的一张。
 
 ---
 
@@ -26,18 +26,16 @@
 - **销售本软件**（原版、改名、汉化、二次打包、上架商店——一律不行）
 - **把本软件作为付费服务对外提供**（付费 SaaS / 在线选片网站 / 收费小程序等）
 - 转售、转授权、再许可
-- 移除或隐藏"片刻"品牌、版权、作者联系方式
-- 用"片刻"或近似名称分发改版软件
+- 移除或隐藏"pick-picture"品牌、版权、作者联系方式
+- 用"pick-picture"或近似名称分发改版软件
 
 ### 🤝 商业合作 / 二次开发授权
 
-如果你想做的事情超出上面"允许"范围（比如把片刻嵌入你的付费产品、做付费 SaaS 等），请联系作者协商单独授权：
-
-**微信 `15828377122`**
+如果你想做的事情超出上面"允许"范围（比如把 pick-picture 嵌入你的付费产品、做付费 SaaS 等），请联系作者协商单独授权：
 
 > 完整条款见 [LICENSE](LICENSE)（中文为准、附英文摘要）。
 >
-> 如果你发现有人在卖片刻 / 把它包装成付费服务，欢迎私信举报。
+> 如果你发现有人在卖 pick-picture / 把它包装成付费服务，欢迎私信举报。
 
 ---
 
@@ -85,7 +83,7 @@
 
 适合未安装 Python 环境或不熟悉命令行的用户。
 
-1. [下载项目 ZIP 压缩包](https://github.com/zhaoyue4810/pianke/archive/refs/heads/main.zip) 并解压到本地。
+1. [下载项目 ZIP 压缩包](https://github.com/kankan158/pick-picture/archive/refs/heads/main.zip) 并解压到本地。
 2. 双击运行对应的启动器脚本：
 
 | 系统 | 启动脚本 | 首次运行安全提示过白方式 |
@@ -242,7 +240,7 @@ python app.py --port 8080 --no-browser
 
 <details>
 <summary><b>7. HEIC 格式图片在网页上无法预览？</b></summary>
-Windows 系统可能需要安装微软官方的 HEIF 扩展才能正常在浏览器中预览该格式；片刻工具在后端能够正常分析处理该格式。
+Windows 系统可能需要安装微软官方的 HEIF 扩展才能正常在浏览器中预览该格式；pick-picture 工具在后端能够正常分析处理该格式。
 </details>
 
 ---
@@ -258,7 +256,4 @@ Windows 系统可能需要安装微软官方的 HEIF 扩展才能正常在浏览
 
 ## 反馈与贡献
 
-欢迎通过 [GitHub Issues](https://github.com/zhaoyue4810/pianke/issues) 提交反馈或建议。
-
-# 个人微信
-15828377122
+欢迎通过 [GitHub Issues](https://github.com/kankan158/pick-picture/issues) 提交反馈或建议。

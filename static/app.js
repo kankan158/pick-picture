@@ -1,4 +1,4 @@
-/* 片刻 — 前端逻辑 v3.2 (照片墙) */
+/* pick-picture — 前端逻辑 v3.2 (照片墙) */
 
 const $ = (id) => document.getElementById(id);
 const VIEWS = ["landing", "processing", "prescreen", "preview", "arena", "done"];
@@ -59,15 +59,15 @@ function showView(name, push = true) {
 }
 function updateTitle(view) {
   const map = {
-    landing: "片刻",
-    processing: "分析中… · 片刻",
-    prescreen: "初筛复核 · 片刻",
-    preview: "分组预览 · 片刻",
-    arena: currentGroup ? `组 #${currentGroup.id_short} · 片刻`
-                        : "选片中 · 片刻",
-    done: "完成 · 片刻",
+    landing: "pick-picture",
+    processing: "分析中… · pick-picture",
+    prescreen: "初筛复核 · pick-picture",
+    preview: "分组预览 · pick-picture",
+    arena: currentGroup ? `组 #${currentGroup.id_short} · pick-picture`
+                        : "选片中 · pick-picture",
+    done: "完成 · pick-picture",
   };
-  document.title = map[view] || "片刻";
+  document.title = map[view] || "pick-picture";
 }
 window.addEventListener("popstate", (e) => {
   const v = e.state?.view;

@@ -1,5 +1,5 @@
 /* =========================================================
-   片刻 — 视觉系统
+   pick-picture — 视觉系统
    参考 Anthropic 2026 春季审美：
    - 暖白米色基调 + 陶土橘强调
    - 大尺寸衬线标题（带斜体强调）
@@ -161,13 +161,11 @@ code {
 }
 .brand-mark.sm { width: 14px; height: 14px; }
 .brand-name {
-  font-family: var(--font-serif);
-  font-size: 26px;
-  font-weight: 500;
-  /* CJK 两字撑开一点，比"片刻"两个孤字挤在一起更像一个 wordmark；
-     padding-right 抵消末字 letter-spacing 留出的空白，让视觉重心居中 */
-  letter-spacing: 0.22em;
-  padding-right: 0.22em;
+  font-family: var(--font-sans);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0;
+  padding-right: 0;
   color: var(--ink);
   line-height: 1;
 }
@@ -2027,7 +2025,7 @@ span.sc-item { color: var(--ink-faint); }
 }
 
 /* =========================================================
-   片刻 v3 增量样式
+   pick-picture v3 增量样式
    ========================================================= */
 
 :root {
