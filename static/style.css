@@ -213,11 +213,12 @@ code {
 .hero-title {
   font-family: var(--font-serif);
   font-weight: 400;
-  font-size: clamp(38px, 5.4vw, 64px);
+  font-size: clamp(36px, 4vw, 52px);
   line-height: 1.02;
   letter-spacing: -0.022em;
   margin: 0 0 18px;
   color: var(--ink);
+  white-space: nowrap;
 }
 .hero-title em {
   font-style: italic;
@@ -227,9 +228,10 @@ code {
 .hero-sub {
   font-size: 16px;
   color: var(--ink-muted);
-  max-width: 540px;
+  max-width: none;
   margin: 0 0 28px;
   line-height: 1.6;
+  white-space: nowrap;
 }
 
 /* 输入表单 */
@@ -1489,8 +1491,14 @@ span.sc-item { color: var(--ink-faint); }
 @media (max-width: 720px) {
   .landing-shell { padding: 20px 18px 24px; }
   .site-header { padding-bottom: 18px; }
-  .hero-title { font-size: clamp(34px, 12vw, 48px); }
-  .hero-sub { margin-bottom: 22px; }
+  .hero-title {
+    font-size: clamp(34px, 12vw, 48px);
+    white-space: normal;
+  }
+  .hero-sub {
+    margin-bottom: 22px;
+    white-space: normal;
+  }
   .field-row {
     display: grid;
     grid-template-columns: auto 1fr;
