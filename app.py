@@ -1935,11 +1935,11 @@ def _record_skipped(folder: str, items: list[tuple[str, str]]) -> None:
 def _wipe_caches(folder: str) -> None:
     """全新开始：把目录恢复到"从没用过本工具"的状态。
 
-    - copy 模式：winners/ losers/ 是副本，原图还在根目录 → 直接删 winners/ losers/。
-    - move 模式：winners/ losers/ 里就是原图本体 → 把文件搬回根目录再删空目录。
+    - copy 模式：winners/ losers/ pending/ 是副本，原图还在根目录 → 直接删这些目录。
+    - move 模式：winners/ losers/ pending/ 里就是原图本体 → 把文件搬回根目录再删空目录。
     - 同时清掉 phash 缓存、session 进度、_pic_selecter/（日志/缩略图/skipped）。
     """
-    # 先读上次的 mode（在删 state 之前），决定 winners/losers 怎么处理。
+    # 先读上次的 mode（在删 state 之前），决定归档目录怎么处理。
     # 读不到时默认按 move 处理（先把文件搬回根目录再删空）—— 这样即使原本是
     # copy 模式也只是产生重名副本，不会丢图；反过来按 copy 误删就是真丢数据。
     prev_mode = "move"
@@ -1953,7 +1953,7 @@ def _wipe_caches(folder: str) -> None:
             logger.warning(f"读 state 判断 mode 失败，按 move 兜底处理: {e}")
 
     root = Path(folder)
-    for sub in ("winners", "losers"):
+    for sub in ("winners", "losers", "pending"):
         d = root / sub
         if not d.is_dir():
             continue
@@ -2875,8 +2875,20 @@ def api_skip_group():
         return jsonify({"error": "no session"}), 400
     with LOCK:
         if SESSION.current_group < len(SESSION.groups):
-            g = SESSION.groups.pop(SESSION.current_group)
-            SESSION.groups.append(g)
+            _push_undo_locked()
+            g = SESSION.groups[SESSION.current_group]
+            postponed = []
+            for p in [g.left, g.right, *g.pending]:
+                if p and p not in postponed:
+                    postponed.append(p)
+            g.maybes.extend([p for p in postponed if p not in g.maybes])
+            g.left = None
+            g.right = None
+            g.pending = []
+            g.winner = None
+            g.extra_winners = []
+            g.finished = True
+            _finalize_group_locked()
         SESSION.undo_stack = []
         save_state(SESSION)
     return api_group()
@@ -3907,12 +3919,18 @@ def api_peek_folder():
 
 @app.route("/api/open_folder", methods=["POST"])
 def api_open_folder():
-    """跨平台打开 folder 或 _pic_selecter 子目录。"""
+    """跨平台打开 folder、分类目录或 _pic_selecter 子目录。"""
     if SESSION is None:
         return jsonify({"error": "no session"}), 400
     data = request.get_json(silent=True) or {}
     sub = data.get("sub")
-    target = pic_dir(SESSION.folder) if sub == "log" else Path(SESSION.folder)
+    category = data.get("category")
+    if category in CLASS_LABELS:
+        target = _class_dir(SESSION.folder, category)
+    elif sub == "log":
+        target = pic_dir(SESSION.folder)
+    else:
+        target = Path(SESSION.folder)
     target = Path(target)
     if not target.exists():
         try:

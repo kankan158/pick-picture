@@ -1019,7 +1019,29 @@ span.sc-item { color: var(--ink-faint); }
   gap: 8px;
   margin-bottom: 56px;
 }
-.done-paths > div { display: flex; align-items: center; gap: 12px; }
+.done-paths > div,
+.path-open {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.path-open {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.path-open code {
+  transition: background .18s var(--ease), color .18s var(--ease), box-shadow .18s var(--ease);
+}
+.path-open:hover code {
+  background: rgba(204, 120, 92, 0.12);
+  color: var(--accent-deep);
+  box-shadow: 0 0 0 1px rgba(204, 120, 92, 0.24);
+}
 .path-label {
   display: inline-block;
   width: 36px;

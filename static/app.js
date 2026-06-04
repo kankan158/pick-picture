@@ -280,7 +280,7 @@ async function goHome() {
   if (!onLanding) {
     const ok = await confirmDialog(
       "回到主页？",
-      "当前任务会退出到首页，选片进度会保存在照片文件夹中，下次可继续。\n（winners/ losers/ 文件夹里已搬过去的图片不会动）"
+      "当前任务会退出到首页，选片进度会保存在照片文件夹中，下次可继续。\n（winners/ losers/ pending/ 文件夹里已搬过去的图片不会动）"
     );
     if (!ok) return;
   }
@@ -710,7 +710,7 @@ async function handleStart(e) {
   if (e && e.preventDefault) e.preventDefault();
   const folder = $("folder-input").value.trim();
   const dry_run = false;  // 试运行入口已下线；后端仍兼容此参数
-  // 一次性运行：每次 start 后端都会清掉 winners/losers/state，不再需要这个选项
+  // 一次性运行：每次 start 后端都会清掉 winners/losers/pending/state，不再需要这个选项
   const wipe_cache = true;
   const mode = document.querySelector('input[name="mode"]:checked')?.value || "copy";
   const engine = currentEngine();
@@ -728,14 +728,14 @@ async function handleStart(e) {
   if (mode === "move" && !dry_run && !localStorage.getItem(CONFIRM_MOVE_KEY)) {
     const ok = await confirmDialog(
       "确认移动文件",
-      '选择"移动"模式：原文件会被搬到 winners/ 与 losers/。强烈推荐"复制"模式以便反悔。继续？'
+      '选择"移动"模式：原文件会被搬到 winners/、losers/ 与 pending/。强烈推荐"复制"模式以便反悔。继续？'
     );
     if (!ok) return;
     localStorage.setItem(CONFIRM_MOVE_KEY, "1");
   } else if (!dry_run && !localStorage.getItem(CONFIRM_REAL_KEY)) {
     const ok = await confirmDialog(
       "开始处理",
-      `将在 ${folder}/winners 与 /losers 创建副本（复制模式）。继续？`
+      `将在 ${folder}/winners、/losers 与 /pending 创建副本（复制模式）。继续？`
     );
     if (!ok) return;
     localStorage.setItem(CONFIRM_REAL_KEY, "1");
@@ -2191,7 +2191,7 @@ async function skipGroup() {
     const s = await fetchJSON("/api/status");
     if (r.done) { enterDone(s); return; }
     renderGroup(r.group, s);
-    toast("放到最后了，可以稍后再决");
+    toast("已放入待定，可在完成页继续归类");
   } finally {
     busy = false;
   }
@@ -2582,7 +2582,7 @@ async function enterDone(status) {
   const modeWord = s.mode === "move" ? "移动" : "复制";
   const baseLine = s.dry_run
     ? "试运行模式 · 没有真的搬运文件，但你已确认了所有选择。"
-    : `胜出以「${modeWord}」归到 winners/，淘汰归到 losers/。`;
+    : `入选以「${modeWord}」归到 winners/，淘汰归到 losers/，待定归到 pending/。`;
   $("done-sub").textContent = singles > 0
     ? `${baseLine}（其中 ${singles} 张无相似副本，直接归入 winners/。）`
     : baseLine;
@@ -2624,6 +2624,19 @@ $("btn-restart").addEventListener("click", () => {
 });
 
 $("btn-go-unfinished").addEventListener("click", () => enterArena());
+document.querySelectorAll(".path-open").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    const category = btn.dataset.category;
+    try {
+      await fetchJSON("/api/open_folder", {
+        method: "POST",
+        body: JSON.stringify({ category }),
+      });
+    } catch (e) {
+      toast("打开失败：" + e.message);
+    }
+  });
+});
 document.querySelectorAll(".review-jump-card").forEach((btn) => {
   btn.addEventListener("click", () => {
     const target = $(btn.dataset.scrollTarget);
@@ -2641,7 +2654,7 @@ $("btn-redo-folder").addEventListener("click", async () => {
   if (!s || !s.folder) { toast("没有可重做的会话"); return; }
   const ok = await confirmDialog(
     "重做这个文件夹",
-    `将清掉 ${s.folder}/winners 与 /losers 子目录、所有缓存与本次进度，` +
+    `将清掉 ${s.folder}/winners、/losers 与 /pending 子目录、所有缓存与本次进度，` +
     `用同样的设置（${s.mode === "move" ? "移动" : "复制"}模式` +
     `${s.dry_run ? "、试运行" : ""}）重新分组挑选。\n\n这步不可撤销，确定继续？`
   );
@@ -2677,10 +2690,10 @@ async function reopenGroup(groupId, groupSize, btn) {
   const ok = await confirmDialog(
     word,
     groupSize > 1
-      ? `把这组的胜者和淘汰者从 winners/ 与 losers/ 还原回原位置，回到擂台从头挑。${
+      ? `把这组的入选、淘汰和待定照片从 winners/、losers/ 与 pending/ 还原回原位置，回到擂台从头挑。${
           currentMode === "move" ? "（移动模式：文件会真的搬回去）" : ""
         }`
-      : `把这张从 winners/ 还原回原位置，回到擂台决定保留还是丢弃。${
+      : `把这张从归档目录还原回原位置，回到擂台决定保留、淘汰还是待定。${
           currentMode === "move" ? "（移动模式：文件会真的搬回去）" : ""
         }`
   );
