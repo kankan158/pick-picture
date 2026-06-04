@@ -9,35 +9,35 @@
 
 :root {
   /* 米色底色 — 像奶油纸 */
-  --bg: #f5f2ea;
-  --bg-warm: #efeadd;
-  --bg-card: #fbf9f3;
-  --bg-card-hover: #fdfbf6;
+  --bg: #F5F0EB;
+  --bg-warm: #EFE7DF;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #FAF7F3;
 
-  --ink: #14110d;             /* 深墨色，比纯黑温和 */
-  --ink-2: #2c2823;
-  --ink-muted: #6b6256;
-  --ink-faint: #9a9080;
-  --line: #d8d0bf;
-  --line-soft: #e2dccc;
-  --line-faint: #ece7d6;
+  --ink: #4A4A4A;             /* 深灰，适合低饱和相册质感 */
+  --ink-2: #363636;
+  --ink-muted: #9A8C7C;
+  --ink-faint: #B8AA9A;
+  --line: #E6DED5;
+  --line-soft: #EEE7DF;
+  --line-faint: #F3EDE7;
 
-  --accent: #cc785c;          /* Anthropic clay */
-  --accent-deep: #b25c41;
-  --accent-soft: #f4ddcf;
-  --accent-glow: rgba(204, 120, 92, 0.16);
+  --accent: #C68B7C;          /* 淘汰：陶土粉 */
+  --accent-deep: #B87868;
+  --accent-soft: rgba(198, 139, 124, 0.18);
+  --accent-glow: rgba(198, 139, 124, 0.2);
 
-  --good: #506b4f;
-  --good-soft: #cfd9c8;
-  --good-glow: rgba(80, 107, 79, 0.18);
+  --good: #7C9C7C;
+  --good-soft: rgba(124, 156, 124, 0.18);
+  --good-glow: rgba(124, 156, 124, 0.22);
 
-  --warn: #b97400;
-  --warn-soft: #f3e3c2;
+  --warn: #D4A86A;
+  --warn-soft: rgba(212, 168, 106, 0.2);
 
   /* 阴影 — 极淡，像纸张抬起 */
-  --shadow-sm: 0 1px 1px rgba(20, 17, 13, 0.04), 0 1px 2px rgba(20, 17, 13, 0.05);
-  --shadow-md: 0 4px 14px rgba(20, 17, 13, 0.07), 0 2px 4px rgba(20, 17, 13, 0.04);
-  --shadow-lg: 0 16px 40px rgba(20, 17, 13, 0.09), 0 6px 12px rgba(20, 17, 13, 0.05);
+  --shadow-sm: 0 1px 1px rgba(74, 74, 74, 0.04), 0 1px 2px rgba(74, 74, 74, 0.05);
+  --shadow-md: 0 4px 14px rgba(74, 74, 74, 0.07), 0 2px 4px rgba(74, 74, 74, 0.04);
+  --shadow-lg: 0 16px 40px rgba(74, 74, 74, 0.1), 0 6px 12px rgba(74, 74, 74, 0.05);
 
   /* Easing：所有过渡的统一节奏 */
   --ease: cubic-bezier(.2, .8, .2, 1);
@@ -50,6 +50,8 @@
 }
 
 * { box-sizing: border-box; }
+[hidden],
+.hidden { display: none !important; }
 html, body {
   margin: 0; padding: 0; height: 100%;
   background: var(--bg);
@@ -116,12 +118,12 @@ code {
   letter-spacing: 0.005em;
 }
 .btn-primary {
-  background: var(--ink);
-  color: var(--bg);
-  box-shadow: 0 1px 2px rgba(20,17,13,0.2);
+  background: var(--good);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(74, 74, 74, 0.14);
 }
 .btn-primary:hover {
-  background: #2a2520;
+  background: #6F8F6F;
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
@@ -153,11 +155,11 @@ code {
   width: 22px; height: 22px;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 30% 30%, #e29274 0%, #cc785c 35%, #ad5841 100%);
+    radial-gradient(circle at 30% 30%, #E8C7B8 0%, #C68B7C 42%, #7C9C7C 100%);
   box-shadow:
-    inset 0 -4px 6px rgba(0,0,0,0.12),
-    inset 0 2px 3px rgba(255,255,255,0.18),
-    0 1px 1px rgba(20,17,13,0.08);
+    inset 0 -4px 6px rgba(74, 74, 74, 0.1),
+    inset 0 2px 3px rgba(255, 255, 255, 0.22),
+    0 1px 1px rgba(74, 74, 74, 0.08);
 }
 .brand-mark.sm { width: 14px; height: 14px; }
 .brand-name {
@@ -800,14 +802,14 @@ label[for="folder-input"] { order: 1; }
   white-space: nowrap;
 }
 .verdict.win {
-  background: rgba(80, 107, 79, 0.92);
-  color: #f5f2ea;
-  box-shadow: 0 8px 24px rgba(80, 107, 79, 0.35);
+  background: rgba(124, 156, 124, 0.94);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(124, 156, 124, 0.32);
 }
 .verdict.lose {
-  background: rgba(20, 17, 13, 0.86);
-  color: #f5f2ea;
-  box-shadow: 0 8px 24px rgba(20, 17, 13, 0.32);
+  background: rgba(198, 139, 124, 0.94);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(198, 139, 124, 0.3);
 }
 
 /* 胜出态：边框变绿、轻微放大、出现 ✓ 徽章 */
@@ -815,7 +817,7 @@ label[for="folder-input"] { order: 1; }
   border-color: var(--good);
   box-shadow:
     0 0 0 4px var(--good-glow),
-    0 12px 32px rgba(80, 107, 79, 0.18);
+    0 12px 32px rgba(124, 156, 124, 0.18);
   transform: scale(1.012);
   background: linear-gradient(180deg, var(--bg-card-hover) 0%, var(--bg-card) 100%);
 }
@@ -832,7 +834,7 @@ label[for="folder-input"] { order: 1; }
 
 /* 淘汰态：去色 + 缩小 + 模糊 + 半透明 + 出现 × 徽章 */
 .side.is-loser .img-frame {
-  border-color: var(--ink-faint);
+  border-color: var(--accent);
   filter: grayscale(0.7) brightness(0.78) contrast(0.96);
   opacity: 0.55;
   transform: scale(0.965);
@@ -1031,8 +1033,17 @@ span.sc-item { color: var(--ink-faint); }
 }
 .review-jump-card:hover {
   transform: translateY(-2px);
-  border-color: var(--accent);
+  border-color: var(--ink-faint);
   box-shadow: var(--shadow-lg);
+}
+.review-jump-card.is-winner {
+  border-color: rgba(124, 156, 124, 0.42);
+}
+.review-jump-card.is-loser {
+  border-color: rgba(198, 139, 124, 0.42);
+}
+.review-jump-card.is-maybe {
+  border-color: rgba(212, 168, 106, 0.46);
 }
 .review-jump-card .rj-label,
 .review-jump-card .rj-path {
@@ -1051,7 +1062,7 @@ span.sc-item { color: var(--ink-faint); }
 }
 .review-jump-card.is-winner strong { color: var(--good); }
 .review-jump-card.is-loser strong { color: var(--accent-deep); }
-.review-jump-card.is-maybe strong { color: #b58a2a; }
+.review-jump-card.is-maybe strong { color: var(--warn); }
 
 /* 胜者画廊 */
 .winners-section {
@@ -1155,6 +1166,15 @@ span.sc-item { color: var(--ink-faint); }
 .winner-card .wc-reopen:disabled { opacity: 0.6; cursor: progress; }
 .review-card {
   cursor: default;
+}
+.review-card.is-winner {
+  border-color: rgba(124, 156, 124, 0.42);
+}
+.review-card.is-loser {
+  border-color: rgba(198, 139, 124, 0.42);
+}
+.review-card.is-maybe {
+  border-color: rgba(212, 168, 106, 0.46);
 }
 .review-card.is-busy {
   opacity: 0.62;
@@ -2167,7 +2187,7 @@ span.sc-item { color: var(--ink-faint); }
 .status-badge.is-busy .status-dot { animation-duration: 1.1s; }
 .status-badge.is-waiting .status-dot { animation-duration: 3.4s; opacity: 0.6; }
 .status-badge.is-done .status-dot { background: var(--good); animation: none; opacity: 0.7; }
-.status-badge.is-error .status-dot { background: #b25c41; animation-duration: 0.8s; }
+.status-badge.is-error .status-dot { background: var(--accent-deep); animation-duration: 0.8s; }
 /* 有 header 的页面：徽章移到 header 以下避免遮挡按钮 */
 #view-arena.active ~ .status-badge,
 body:has(#view-arena.active) .status-badge {
@@ -2631,7 +2651,7 @@ body:has(#view-done.active) .status-badge {
 
 :root {
   /* 失败类别配色——五类，纸感色调 */
-  --cat-blur:     #cc785c;   /* 失焦 → 陶土橙（强信号） */
+  --cat-blur:     #C68B7C;   /* 失焦 → 陶土粉（强信号） */
   --cat-eyes:     #7d5e8e;   /* 闭眼 → 紫罗兰 */
   --cat-exposure: #b58420;   /* 曝光 → 琥珀 */
   --cat-comp:     #4a6e7a;   /* 构图 / 反差 → 钢蓝 */
