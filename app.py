@@ -3170,6 +3170,7 @@ def _all_classified_items() -> dict[str, list[dict]]:
 
 
 @app.route("/api/collections")
+@app.route("/api/review_collections")
 def api_collections():
     if SESSION is None:
         return jsonify({"categories": {}})

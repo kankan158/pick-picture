@@ -2540,8 +2540,23 @@ async function renderReviewBoard() {
   try {
     data = await fetchJSON("/api/collections");
   } catch (err) {
-    $("done-album").innerHTML = `<div class="winners-empty">加载失败：${err.message}</div>`;
-    return;
+    try {
+      const w = await fetchJSON("/api/winners");
+      data = {
+        categories: {
+          winner: { items: (w.winners || []).map((item) => ({ ...item, category: "winner" })) },
+          loser: { items: [] },
+          maybe: { items: [] },
+        },
+      };
+      toast("分类列表接口暂不可用，已先显示入选照片");
+    } catch (fallbackErr) {
+      for (const meta of Object.values(REVIEW_META)) {
+        const grid = $(meta.gridId);
+        if (grid) grid.innerHTML = `<div class="winners-empty">加载失败：${fallbackErr.message}</div>`;
+      }
+      return;
+    }
   }
   const cats = data.categories || {};
   for (const [key, meta] of Object.entries(REVIEW_META)) {
@@ -2586,10 +2601,6 @@ async function enterDone(status) {
   $("done-sub").textContent = singles > 0
     ? `${baseLine}（其中 ${singles} 张无相似副本，直接归入 winners/。）`
     : baseLine;
-  $("path-win").textContent = (s.folder || "") + "/winners";
-  $("path-lose").textContent = (s.folder || "") + "/losers";
-  $("path-maybe").textContent = (s.folder || "") + "/pending";
-
   const unfinished = s.unfinished_groups || 0;
   $("unfinished-notice").classList.toggle("hidden", unfinished <= 0);
   $("unfinished-num").textContent = unfinished;
@@ -2624,19 +2635,6 @@ $("btn-restart").addEventListener("click", () => {
 });
 
 $("btn-go-unfinished").addEventListener("click", () => enterArena());
-document.querySelectorAll(".path-open").forEach((btn) => {
-  btn.addEventListener("click", async () => {
-    const category = btn.dataset.category;
-    try {
-      await fetchJSON("/api/open_folder", {
-        method: "POST",
-        body: JSON.stringify({ category }),
-      });
-    } catch (e) {
-      toast("打开失败：" + e.message);
-    }
-  });
-});
 document.querySelectorAll(".review-jump-card").forEach((btn) => {
   btn.addEventListener("click", () => {
     const target = $(btn.dataset.scrollTarget);
