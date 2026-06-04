@@ -1592,7 +1592,17 @@ $("btn-prescreen-continue").addEventListener("click", async () => {
   catch (e) { toast("继续失败：" + e.message); }
 });
 $("btn-prescreen-skip").addEventListener("click", async () => {
-  try { await confirmPrescreenAndContinue(); }
+  try {
+    const pending = prescreenItems.filter((item) => !item.restored);
+    for (const item of pending) {
+      await fetchJSON("/api/restore_rejected", {
+        method: "POST",
+        body: JSON.stringify({ group_id: item.group_id, path: item.path }),
+      });
+      item.restored = true;
+    }
+    await confirmPrescreenAndContinue();
+  }
   catch (e) { toast("继续失败：" + e.message); }
 });
 $("btn-prescreen-all").addEventListener("click", async () => {
