@@ -406,6 +406,12 @@ label[for="folder-input"] { order: 1; }
   font-weight: 500;
   margin-bottom: 2px;
 }
+.landing-record-actions {
+  margin: 16px 0 0 224px;
+  max-width: 716px;
+  display: flex;
+  justify-content: flex-end;
+}
 
 .landing-foot {
   margin-top: auto;
@@ -1024,6 +1030,47 @@ span.sc-item { color: var(--ink-faint); }
   color: var(--ink-faint);
 }
 
+.review-jump-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: -30px 0 44px;
+}
+.review-jump-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-card);
+  min-height: 116px;
+  padding: 18px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform .22s var(--ease), border-color .2s var(--ease), box-shadow .22s var(--ease);
+}
+.review-jump-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-lg);
+}
+.review-jump-card .rj-label,
+.review-jump-card .rj-path {
+  display: block;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.review-jump-card strong {
+  display: block;
+  margin: 8px 0 10px;
+  font-family: var(--font-serif);
+  font-size: 42px;
+  font-weight: 400;
+  color: var(--ink);
+}
+.review-jump-card.is-winner strong { color: var(--good); }
+.review-jump-card.is-loser strong { color: var(--accent-deep); }
+.review-jump-card.is-maybe strong { color: #b58a2a; }
+
 /* 胜者画廊 */
 .winners-section {
   margin-top: 16px;
@@ -1124,6 +1171,55 @@ span.sc-item { color: var(--ink-faint); }
 .winner-card:hover .wc-reopen { opacity: 1; }
 .winner-card .wc-reopen:hover { background: var(--accent, #cc785c); }
 .winner-card .wc-reopen:disabled { opacity: 0.6; cursor: progress; }
+.review-card {
+  cursor: default;
+}
+.review-card.is-busy {
+  opacity: 0.62;
+  pointer-events: none;
+}
+.review-open {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+.review-actions {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity .2s var(--ease), transform .2s var(--ease);
+}
+.review-card:hover .review-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+.review-move {
+  flex: 1;
+  border: 1px solid rgba(250, 247, 239, 0.5);
+  border-radius: 999px;
+  background: rgba(20, 17, 13, 0.78);
+  color: #faf7ef;
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+.review-move:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.review-grid .winners-empty {
+  grid-column: 1 / -1;
+}
 @keyframes cardIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -1474,6 +1570,7 @@ span.sc-item { color: var(--ink-faint); }
 @media (max-width: 900px) {
   .winners-grid { grid-template-columns: repeat(3, 1fr); }
   .auto-reject-grid { grid-template-columns: repeat(3, 1fr); }
+  .review-jump-grid { grid-template-columns: 1fr; }
   .prescreen-stats { grid-template-columns: repeat(2, 1fr); }
   .landing-shell { padding: 24px 28px 28px; }
   .start-layout {
@@ -1484,6 +1581,10 @@ span.sc-item { color: var(--ink-faint); }
     position: static;
   }
   .hero-meta {
+    margin-left: 0;
+    max-width: 100%;
+  }
+  .landing-record-actions {
     margin-left: 0;
     max-width: 100%;
   }
@@ -1519,6 +1620,7 @@ span.sc-item { color: var(--ink-faint); }
   .overall .bar { width: 140px; }
   .winners-grid { grid-template-columns: repeat(2, 1fr); }
   .auto-reject-grid { grid-template-columns: repeat(2, 1fr); }
+  .review-actions { opacity: 1; transform: none; }
   .done-stats { grid-template-columns: 1fr; }
   .prescreen-stats { grid-template-columns: 1fr; }
 }

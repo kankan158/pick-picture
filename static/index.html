@@ -225,6 +225,9 @@
           <div class="meta-text"><strong>选片</strong><br>左右擂台 · 键盘 · 同步缩放</div>
         </div>
       </div>
+      <div class="landing-record-actions">
+        <button type="button" id="btn-import-record-home" class="btn-ghost">导入选片记录</button>
+      </div>
     </main>
 
     <footer class="landing-foot">
@@ -461,6 +464,9 @@
       <span id="mode-pill" class="pill mode hidden">复制</span>
       <span id="dry-run-pill" class="pill warn hidden">试运行</span>
       <span id="zoom-pill" class="pill zoom hidden">1×</span>
+      <button id="btn-save-session" class="btn-ghost" title="立即保存当前选片进度">保存进度</button>
+      <button id="btn-export-session" class="btn-ghost" title="导出 .pianke 选片记录">导出记录</button>
+      <button id="btn-import-record-arena" class="btn-ghost" title="导入 .pianke 或 .json 选片记录">导入记录</button>
       <button id="btn-quit" class="btn-ghost" title="处理另一个文件夹">换文件夹</button>
       <button class="btn-ghost btn-go-home" title="放弃当前任务，回到主页">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -653,6 +659,25 @@
     <div class="done-paths">
       <div><span class="path-label">胜出</span><code id="path-win"></code></div>
       <div><span class="path-label">淘汰</span><code id="path-lose"></code></div>
+      <div><span class="path-label">待定</span><code id="path-maybe"></code></div>
+    </div>
+
+    <div class="review-jump-grid">
+      <button class="review-jump-card is-winner" data-scroll-target="section-winner">
+        <span class="rj-label">入选</span>
+        <strong id="review-count-winner">0</strong>
+        <span class="rj-path">winners/</span>
+      </button>
+      <button class="review-jump-card is-loser" data-scroll-target="section-loser">
+        <span class="rj-label">淘汰</span>
+        <strong id="review-count-loser">0</strong>
+        <span class="rj-path">losers/</span>
+      </button>
+      <button class="review-jump-card is-maybe" data-scroll-target="section-maybe">
+        <span class="rj-label">待定</span>
+        <strong id="review-count-maybe">0</strong>
+        <span class="rj-path">pending/</span>
+      </button>
     </div>
 
     <div id="unfinished-notice" class="unfinished-notice hidden">
@@ -660,23 +685,30 @@
       <button id="btn-go-unfinished" class="btn btn-primary small">回去处理</button>
     </div>
 
-    <!-- 相册目录式胜者展示：按"拍摄半天"自动分章 -->
-    <div class="winners-section">
+    <!-- 三类归档展示：入选 / 淘汰 / 待定 -->
+    <div class="winners-section" id="section-winner">
       <div class="winners-section-head">
-        <h2 class="winners-section-title">这次留下的</h2>
+        <h2 class="winners-section-title">入选</h2>
         <span class="winners-count" id="winners-count"></span>
       </div>
       <div id="done-album" class="done-album"></div>
       <div id="winners-grid" class="winners-grid"></div>
     </div>
 
-    <div class="winners-section auto-reject-section hidden" id="auto-reject-section">
+    <div class="winners-section review-section" id="section-loser">
       <div class="winners-section-head">
-        <h2 class="winners-section-title">AI 放手的照片</h2>
-        <span class="winners-count" id="auto-reject-count"></span>
+        <h2 class="winners-section-title">淘汰</h2>
+        <span class="winners-count" id="losers-count"></span>
       </div>
-      <p class="auto-reject-hint">这些已归入 losers/。如有要召回的，点一下即可还原回原位置。</p>
-      <div id="auto-reject-grid" class="auto-reject-grid"></div>
+      <div id="losers-grid" class="winners-grid review-grid"></div>
+    </div>
+
+    <div class="winners-section review-section" id="section-maybe">
+      <div class="winners-section-head">
+        <h2 class="winners-section-title">待定</h2>
+        <span class="winners-count" id="maybe-count"></span>
+      </div>
+      <div id="maybe-grid" class="winners-grid review-grid"></div>
     </div>
 
     <details class="skipped-section" id="skipped-details">
@@ -761,6 +793,7 @@
 
 <!-- 全局 toast -->
 <div id="toast" class="toast hidden"></div>
+<input id="session-import-file" class="hidden" type="file" accept=".pianke,.json,application/json">
 
 <!-- 首次确认弹窗 -->
 <div id="confirm" class="modal hidden">

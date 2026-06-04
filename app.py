@@ -48,7 +48,7 @@ except Exception:
 
 
 STATE_FILENAME = ".pic_selecter_state.json"
-STATE_SCHEMA = 6
+STATE_SCHEMA = 7
 PIC_DIR = "_pic_selecter"
 THUMB_MAX = 1600
 
@@ -93,6 +93,7 @@ class GroupState:
     left: Optional[str] = None
     right: Optional[str] = None
     losers: list[str] = field(default_factory=list)
+    maybes: list[str] = field(default_factory=list)
     winner: Optional[str] = None
     # 通过"全要"决定共同获胜的图片（与 winner 一起进 winners/）
     extra_winners: list[str] = field(default_factory=list)
@@ -181,6 +182,10 @@ def winners_dir(folder: str) -> Path:
 
 def losers_dir(folder: str) -> Path:
     return Path(folder) / "losers"
+
+
+def pending_dir(folder: str) -> Path:
+    return Path(folder) / "pending"
 
 
 def pic_dir(folder: str) -> Path:
@@ -491,6 +496,13 @@ def _migrate_state(data: dict) -> dict:
         # v5 → v6: 加 RAW+JPG 配对支持
         data.setdefault("companions", {})
         data["schema"] = 6
+        schema = 6
+    if schema == 6:
+        # v6 → v7: 加待定归档
+        data.setdefault("companions", {})
+        for g in data.get("groups", []):
+            g.setdefault("maybes", [])
+        data["schema"] = 7
         return data
     raise ValueError(
         f"state schema {schema} 太旧（仅支持 v4+）。"
@@ -539,6 +551,7 @@ def _group_from_dict(g: dict) -> GroupState:
         left=g.get("left"),
         right=g.get("right"),
         losers=g.get("losers", []),
+        maybes=g.get("maybes", []),
         winner=g.get("winner"),
         extra_winners=g.get("extra_winners", []),
         finished=g.get("finished", False),
@@ -550,6 +563,41 @@ def _group_from_dict(g: dict) -> GroupState:
         auto_selected=g.get("auto_selected", False),
         manual_restored=g.get("manual_restored", []),
     )
+
+
+def _session_summary(state: SessionState) -> dict:
+    finished = sum(1 for g in state.groups if g.finished)
+    multi = sum(1 for g in state.groups if len(g.images) > 1)
+    finished_multi = sum(1 for g in state.groups if g.finished and len(g.images) > 1)
+    winners = sum((1 if g.winner else 0) + len(g.extra_winners) for g in state.groups)
+    losers = sum(len(g.losers) for g in state.groups)
+    maybes = sum(len(g.maybes) for g in state.groups)
+    image_count = sum(len(g.images) for g in state.groups)
+    unfinished = len(state.groups) - finished
+    selection_started = (
+        state.current_group > 0 or
+        any(g.finished and len(g.images) > 1 and not g.auto_selected for g in state.groups)
+    )
+    return {
+        "ready": True,
+        "folder": state.folder,
+        "dry_run": state.dry_run,
+        "mode": state.mode,
+        "engine": state.engine,
+        "total_groups": len(state.groups),
+        "image_count": image_count,
+        "multi_groups": multi,
+        "finished_groups": finished,
+        "finished_multi_groups": finished_multi,
+        "winner_count": winners,
+        "loser_count": losers,
+        "maybe_count": maybes,
+        "current_group": state.current_group,
+        "unfinished_groups": unfinished,
+        "selection_started": selection_started,
+        "complete": len(state.groups) > 0 and unfinished <= 0,
+        "state_file": str(state_path(state.folder)),
+    }
 
 
 AUTO_WIN_MARGIN = {
@@ -1182,7 +1230,8 @@ def apply_group(group: GroupState, folder: str, dry_run: bool, mode: str,
     # 不创建空 winners/ losers/。正常单图组在 build_session 时已被赋 winner=images[0]。
     has_winner = bool(group.winner) or bool(group.extra_winners)
     has_losers = bool(group.losers)
-    if not has_winner and not has_losers:
+    has_maybes = bool(group.maybes)
+    if not has_winner and not has_losers and not has_maybes:
         if not dry_run:
             group.applied = True
         return {"winner": None, "extra_winners": [], "losers": [], "failed": [],
@@ -1190,12 +1239,15 @@ def apply_group(group: GroupState, folder: str, dry_run: bool, mode: str,
 
     win_d = winners_dir(folder)
     lose_d = losers_dir(folder)
+    maybe_d = pending_dir(folder)
     if has_winner:
         win_d.mkdir(exist_ok=True)
     if has_losers:
         lose_d.mkdir(exist_ok=True)
+    if has_maybes:
+        maybe_d.mkdir(exist_ok=True)
 
-    moved = {"winner": None, "extra_winners": [], "losers": [], "failed": [],
+    moved = {"winner": None, "extra_winners": [], "losers": [], "maybes": [], "failed": [],
              "dry_run": dry_run, "mode": mode}
 
     def _get_comps(p: str) -> list[str]:
@@ -1282,6 +1334,35 @@ def apply_group(group: GroupState, folder: str, dry_run: bool, mode: str,
         else:
             new_losers.append(loser)
     group.losers = new_losers
+
+    new_maybes = []
+    for maybe in group.maybes:
+        comps = _get_comps(maybe)
+        target_preview = _unique_target(maybe_d, Path(maybe).name)
+        moved["maybes"].append({"from": maybe, "to": str(target_preview)})
+        if not dry_run:
+            result = _transfer_main_with_companions(maybe, maybe_d, mode, comps)
+            if result["ok"]:
+                new_main = result["main_target"]
+                group.move_log.append({"src": maybe, "dst": new_main, "kind": "maybe"})
+                _record_companion_log(group, result["companion_pairs"], "maybe_companion")
+                for cf in result["companion_failed"]:
+                    moved["failed"].append(cf)
+                if mode == "move":
+                    if session is not None and maybe in session.meta:
+                        session.meta[new_main] = session.meta[maybe]
+                    _update_session_companions_after_move(
+                        session, maybe, new_main, result["companion_pairs"]
+                    )
+                    new_maybes.append(new_main)
+                else:
+                    new_maybes.append(maybe)
+            else:
+                moved["failed"].append({"path": maybe, "reason": result["main_error"]})
+                new_maybes.append(maybe)
+        else:
+            new_maybes.append(maybe)
+    group.maybes = new_maybes
 
     if not dry_run and not moved["failed"]:
         group.applied = True
@@ -1429,6 +1510,7 @@ def reopen_group(group: GroupState, folder: str, mode: str,
     group.winner = None
     group.extra_winners = []
     group.losers = []
+    group.maybes = []
     if len(group.images) == 1:
         # 单图组反悔：放进擂台单边，让用户决定保留还是丢
         group.left = group.images[0]
@@ -2401,6 +2483,7 @@ def api_status():
     finished = sum(1 for g in SESSION.groups if g.finished)
     winners = sum((1 if g.winner else 0) + len(g.extra_winners) for g in SESSION.groups)
     losers = sum(len(g.losers) for g in SESSION.groups)
+    maybes = sum(len(g.maybes) for g in SESSION.groups)
     image_count = sum(len(g.images) for g in SESSION.groups)
     if image_count == 0 and (SESSION.prescreen_rejected or not SESSION.prescreen_reviewed):
         image_count = len(_infos_from_memory_or_cache(SESSION.folder))
@@ -2435,6 +2518,7 @@ def api_status():
         "finished_multi_groups": finished_multi,
         "winner_count": winners,
         "loser_count": losers,
+        "maybe_count": maybes,
         "current_group": SESSION.current_group,
         "unfinished_groups": unfinished,
         "threshold_near": SESSION.threshold_near,
@@ -2458,6 +2542,103 @@ def api_status():
             "brighter_passed": SESSION.pref_brighter_passed,
         },
     })
+
+
+@app.route("/api/session_probe", methods=["POST"])
+def api_session_probe():
+    data = request.get_json(force=True) or {}
+    folder = (data.get("folder") or "").strip()
+    if not folder:
+        return jsonify({"exists": False})
+    folder = str(Path(folder).expanduser().resolve())
+    sess = load_state(folder)
+    if sess is None:
+        return jsonify({"exists": False})
+    summary = _session_summary(sess)
+    summary["exists"] = True
+    summary["unfinished"] = not summary.get("complete", False)
+    return jsonify(summary)
+
+
+@app.route("/api/session_resume", methods=["POST"])
+def api_session_resume():
+    global SESSION
+    data = request.get_json(force=True) or {}
+    folder = (data.get("folder") or "").strip()
+    if not folder:
+        return jsonify({"error": "缺少 folder"}), 400
+    folder = str(Path(folder).expanduser().resolve())
+    sess = load_state(folder)
+    if sess is None:
+        return jsonify({"error": "没有找到可恢复的选片记录"}), 404
+    with LOCK:
+        SESSION = sess
+        setup_logger(folder)
+    summary = _session_summary(sess)
+    summary["resumed"] = True
+    return jsonify(summary)
+
+
+@app.route("/api/session_save", methods=["POST"])
+def api_session_save():
+    if SESSION is None:
+        return jsonify({"error": "no session"}), 400
+    with LOCK:
+        save_state(SESSION)
+        summary = _session_summary(SESSION)
+    return jsonify({"ok": True, **summary})
+
+
+@app.route("/api/session_export")
+def api_session_export():
+    folder = request.args.get("folder", "").strip()
+    target: Optional[Path] = None
+    if SESSION is not None:
+        target = state_path(SESSION.folder)
+    elif folder:
+        target = state_path(str(Path(folder).expanduser().resolve()))
+    if target is None or not target.exists():
+        return jsonify({"error": "没有可导出的选片记录"}), 404
+    return send_file(
+        target,
+        as_attachment=True,
+        download_name=f"pick-picture-{int(time.time())}.pianke",
+        mimetype="application/json",
+    )
+
+
+@app.route("/api/session_import", methods=["POST"])
+def api_session_import():
+    global SESSION
+    if "file" in request.files:
+        raw = request.files["file"].read().decode("utf-8")
+    else:
+        payload = request.get_json(force=True) or {}
+        raw = payload.get("data") or ""
+    if not raw.strip():
+        return jsonify({"error": "选片记录为空"}), 400
+    try:
+        data = json.loads(raw)
+        data = _migrate_state(data)
+    except Exception as e:
+        return jsonify({"error": f"选片记录格式无效：{type(e).__name__}: {e}"}), 400
+    folder = str(Path(data.get("folder", "")).expanduser().resolve())
+    if not folder or not Path(folder).is_dir():
+        return jsonify({"error": f"记录里的照片文件夹不存在：{folder}"}), 400
+    target = state_path(folder)
+    try:
+        tmp = target.with_suffix(target.suffix + ".import.tmp")
+        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(target)
+    except OSError as e:
+        return jsonify({"error": f"写入选片记录失败：{e}"}), 500
+    sess = load_state(folder)
+    if sess is None:
+        return jsonify({"error": "导入后读取选片记录失败"}), 500
+    with LOCK:
+        SESSION = sess
+        setup_logger(folder)
+    return jsonify({"ok": True, "imported": True, **_session_summary(sess)})
 
 
 def _skip_finished_locked() -> None:
@@ -2874,6 +3055,223 @@ def api_winners():
                 "applied": g.applied,
             })
     return jsonify({"winners": out})
+
+
+CLASS_LABELS = {
+    "winner": "入选",
+    "loser": "淘汰",
+    "maybe": "待定",
+}
+
+
+def _class_dir(folder: str, category: str) -> Path:
+    if category == "winner":
+        return winners_dir(folder)
+    if category == "loser":
+        return losers_dir(folder)
+    if category == "maybe":
+        return pending_dir(folder)
+    raise ValueError("invalid category")
+
+
+def _class_kind(category: str) -> str:
+    return {"winner": "winner", "loser": "loser", "maybe": "maybe"}[category]
+
+
+def _actual_class_path(category: str, stored: str) -> str:
+    if SESSION is None:
+        return stored
+    class_candidate = _class_dir(SESSION.folder, category) / Path(stored).name
+    if class_candidate.exists():
+        return str(class_candidate)
+    if Path(stored).exists():
+        return stored
+    return stored
+
+
+def _state_items_for_category(category: str) -> list[dict]:
+    if SESSION is None:
+        return []
+    items = []
+    for i, g in enumerate(SESSION.groups):
+        if category == "winner":
+            paths = ([g.winner] if g.winner else []) + list(g.extra_winners)
+        elif category == "loser":
+            paths = list(g.losers)
+        else:
+            paths = list(g.maybes)
+        for p in paths:
+            if not p:
+                continue
+            actual = _actual_class_path(category, p)
+            items.append({
+                "path": actual,
+                "original_path": p,
+                "name": Path(p).name,
+                "category": category,
+                "label": CLASS_LABELS[category],
+                "group_index": i,
+                "group_id": g.id,
+                "group_size": len(g.images),
+                "applied": g.applied,
+                "datetime": (SESSION.meta.get(p) or SESSION.meta.get(actual) or {}).get("datetime"),
+            })
+    return items
+
+
+def _all_classified_items() -> dict[str, list[dict]]:
+    if SESSION is None:
+        return {"winner": [], "loser": [], "maybe": []}
+    result = {cat: _state_items_for_category(cat) for cat in ("winner", "loser", "maybe")}
+    seen = {
+        cat: {str(Path(item["path"]).resolve()) for item in items if Path(item["path"]).exists()}
+        for cat, items in result.items()
+    }
+    try:
+        from pic_selecter.grouper import ALL_INPUT_EXTS
+    except Exception:
+        ALL_INPUT_EXTS = {".jpg", ".jpeg", ".png", ".heic", ".heif", ".webp", ".bmp", ".tif", ".tiff"}
+    for cat in ("winner", "loser", "maybe"):
+        folder = _class_dir(SESSION.folder, cat)
+        if not folder.exists():
+            continue
+        for p in folder.iterdir():
+            if not p.is_file() or p.suffix.lower() not in ALL_INPUT_EXTS:
+                continue
+            rp = str(p.resolve())
+            if rp in seen[cat]:
+                continue
+            result[cat].append({
+                "path": str(p),
+                "original_path": str(p),
+                "name": p.name,
+                "category": cat,
+                "label": CLASS_LABELS[cat],
+                "group_index": -1,
+                "group_id": "",
+                "group_size": 1,
+                "applied": True,
+                "datetime": None,
+            })
+            seen[cat].add(rp)
+    return result
+
+
+@app.route("/api/collections")
+def api_collections():
+    if SESSION is None:
+        return jsonify({"categories": {}})
+    cats = _all_classified_items()
+    return jsonify({
+        "folder": SESSION.folder,
+        "paths": {
+            "winner": str(winners_dir(SESSION.folder)),
+            "loser": str(losers_dir(SESSION.folder)),
+            "maybe": str(pending_dir(SESSION.folder)),
+        },
+        "categories": {
+            cat: {
+                "key": cat,
+                "label": CLASS_LABELS[cat],
+                "count": len(items),
+                "items": items,
+            }
+            for cat, items in cats.items()
+        },
+    })
+
+
+def _remove_from_group_classes(group: GroupState, raw: str, actual: str) -> None:
+    names = {Path(raw).name, Path(actual).name}
+
+    def keep(p: str) -> bool:
+        return p not in {raw, actual} and Path(p).name not in names
+
+    if group.winner and not keep(group.winner):
+        group.winner = None
+    group.extra_winners = [p for p in group.extra_winners if keep(p)]
+    group.losers = [p for p in group.losers if keep(p)]
+    group.maybes = [p for p in group.maybes if keep(p)]
+
+
+def _find_class_item(raw_path: str) -> tuple[Optional[str], Optional[GroupState], Optional[str], str]:
+    if SESSION is None:
+        return None, None, None, raw_path
+    raw_name = Path(raw_path).name
+    for cat, items in _all_classified_items().items():
+        for item in items:
+            actual = item["path"]
+            original = item.get("original_path") or actual
+            if raw_path in (actual, original) or raw_name in (Path(actual).name, Path(original).name):
+                group = None
+                gid = item.get("group_id")
+                if gid:
+                    group = next((g for g in SESSION.groups if g.id == gid), None)
+                return cat, group, original, actual
+    return None, None, None, raw_path
+
+
+def _move_class_file(actual: str, target_category: str) -> str:
+    if SESSION is None:
+        raise OSError("no session")
+    src = Path(actual)
+    if not src.exists():
+        raise FileNotFoundError(actual)
+    dst_dir = _class_dir(SESSION.folder, target_category)
+    dst_dir.mkdir(exist_ok=True)
+    if src.parent.resolve() == dst_dir.resolve():
+        return str(src)
+    dst = _unique_target(dst_dir, src.name)
+    shutil.move(str(src), str(dst))
+    return str(dst)
+
+
+@app.route("/api/reclassify", methods=["POST"])
+def api_reclassify():
+    if SESSION is None:
+        return jsonify({"error": "no session"}), 400
+    data = request.get_json(force=True) or {}
+    raw_path = data.get("path") or ""
+    target = data.get("target") or ""
+    if target not in CLASS_LABELS:
+        return jsonify({"error": "invalid target"}), 400
+    if not raw_path:
+        return jsonify({"error": "缺少 path"}), 400
+    with LOCK:
+        source, group, original, actual = _find_class_item(raw_path)
+        if source is None:
+            return jsonify({"error": "找不到这张照片"}), 404
+        try:
+            new_path = actual if SESSION.dry_run else _move_class_file(actual, target)
+        except OSError as e:
+            return jsonify({"error": str(e)}), 500
+
+        if group is None:
+            group = GroupState(images=[original or new_path], finished=True, applied=True)
+            SESSION.groups.append(group)
+        _remove_from_group_classes(group, original or raw_path, actual)
+        if target == "winner":
+            if not group.winner:
+                group.winner = new_path
+            elif new_path not in group.extra_winners:
+                group.extra_winners.append(new_path)
+        elif target == "loser":
+            if new_path not in group.losers:
+                group.losers.append(new_path)
+        else:
+            if new_path not in group.maybes:
+                group.maybes.append(new_path)
+        group.finished = True
+        group.applied = True
+        group.move_log.append({
+            "src": actual,
+            "dst": new_path,
+            "kind": f"reclassify_{_class_kind(source)}_to_{_class_kind(target)}",
+        })
+        if actual in SESSION.meta:
+            SESSION.meta[new_path] = SESSION.meta.pop(actual)
+        save_state(SESSION)
+    return jsonify({"ok": True, "from": source, "to": target, "path": new_path})
 
 
 def _actual_auto_rejected_path(group: GroupState, original: str, folder: str) -> str:
@@ -3487,7 +3885,12 @@ def api_peek_folder():
     if earliest and latest and latest > earliest:
         span_days = max(1, int((latest - earliest) / 86400) + 1)
 
-    has_prior = (p / "winners").is_dir() or (p / "losers").is_dir() or state_path(folder).exists()
+    has_prior = (
+        (p / "winners").is_dir() or
+        (p / "losers").is_dir() or
+        (p / "pending").is_dir() or
+        state_path(folder).exists()
+    )
 
     return jsonify({
         "ok": True,
